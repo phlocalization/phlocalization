@@ -133,11 +133,14 @@ def execute(filters=None):
 		final_data.append(row)
 
 	for row in data:
-		indent = row.get("indent", 0)
+		if row.get("is_group") and not row.get("parent_account"):
+			continue
+		
 		account = row.get("account")
 		schedule = account_schedules.get(account)
+		is_group = row.get("is_group")
 
-		if indent == 2 and schedule:
+		if is_group and schedule:
 			flush_schedule_total()
 
 			final_data.append({
@@ -151,16 +154,14 @@ def execute(filters=None):
 			schedule_total = {}
 			continue
 
-		if current_schedule and indent >= 3:
-			row = row.copy()
-			row["schedule"] = ""
-			row["indent"] = indent - 2
-			final_data.append(row)
-
+		if current_schedule and not is_group:
+			row_copy = row.copy()
+			row_copy["schedule"] = ""
+			final_data.append(row_copy)
 
 			for key in value_fields:
-				if isinstance(row.get(key), (int, float)):
-					schedule_total[key] = schedule_total.get(key, 0) + row[key]
+				if isinstance(row_copy.get(key), (int, float)):
+					schedule_total[key] = schedule_total.get(key, 0) + row_copy[key]
 			continue
 
 		flush_schedule_total()
