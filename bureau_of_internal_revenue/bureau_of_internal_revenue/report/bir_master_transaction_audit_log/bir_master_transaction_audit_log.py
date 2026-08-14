@@ -42,6 +42,7 @@ def get_columns():
 		{"label": "Credit (Net Change)",    "fieldname": "net_credit",        "fieldtype": "Currency",                                "width": 130},
 		{"label": "Debit (Balance)",        "fieldname": "balance_debit",     "fieldtype": "Currency",                                "width": 130},
 		{"label": "Credit (Balance)",       "fieldname": "balance_credit",    "fieldtype": "Currency",                                "width": 130},
+		{"label": "Status",                 "fieldname": "status",            "fieldtype": "Data",                                    "width": 100},
 		{"label": "Owner",                  "fieldname": "owner",             "fieldtype": "Link",         "options": "User",         "width": 160},
 		{"label": "Creation Date",          "fieldname": "creation",          "fieldtype": "Datetime",                                "width": 160},
 		{"label": "Modified By",            "fieldname": "modified_by",       "fieldtype": "Link",         "options": "User",         "width": 160},
@@ -54,6 +55,13 @@ def get_data(filters):
   Build and run the SQL that assembles every report row.
 	Combines beginning balances, transaction details, subtotals, and totals.
 	Returns the query result as a list of dicts for the report engine.
+
+	Status column logic (ported from BIR Stock Audit Trail):
+	  Posted    -> GL Entry with is_cancelled = 0
+	  Cancelled -> GL Entry with is_cancelled = 1
+	The Status filter (All / Posted / Cancelled Transactions, default Posted)
+	is applied to in-period transaction queries only. Pre-period beginning-balance
+	subqueries stay posted-only so opening balances remain correct.
 	"""
 	sql = """
 WITH
@@ -61,7 +69,11 @@ accounts_with_txn AS (
   SELECT DISTINCT g.account
   FROM `tabGL Entry` g
   WHERE g.docstatus = 1
-    AND IFNULL(g.is_cancelled, 0) = 0
+    AND (
+      COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'All Transactions'
+      OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Posted Transactions'    AND IFNULL(g.is_cancelled, 0) = 0)
+      OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Cancelled Transactions' AND IFNULL(g.is_cancelled, 0) = 1)
+    )
     AND g.company = %(company)s
     AND g.posting_date BETWEEN %(from_date)s AND %(to_date)s
 ),
@@ -110,6 +122,7 @@ SELECT
     net_credit,
     balance_debit,
     balance_credit,
+    status,
     owner,
     creation,
     modified_by,
@@ -134,6 +147,7 @@ FROM (
         NULL AS net_credit,
         NULL AS balance_debit,
         NULL AS balance_credit,
+        NULL AS status,
         NULL AS owner,
         NULL AS creation,
         NULL AS modified_by,
@@ -296,6 +310,7 @@ FROM (
             )
             ELSE 0
         END AS balance_credit,
+        CASE WHEN IFNULL(g.is_cancelled, 0) = 1 THEN 'Cancelled' ELSE 'Posted' END AS status,
         g.owner AS owner,
         g.creation AS creation,
         g.modified_by AS modified_by,
@@ -394,7 +409,11 @@ FROM (
     ) je_items ON je_items.pe_name = g.voucher_no AND g.voucher_type = 'Payment Entry'
 
     WHERE g.docstatus = 1
-      AND IFNULL(g.is_cancelled, 0) = 0
+      AND (
+        COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'All Transactions'
+        OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Posted Transactions'    AND IFNULL(g.is_cancelled, 0) = 0)
+        OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Cancelled Transactions' AND IFNULL(g.is_cancelled, 0) = 1)
+      )
       AND g.company = %(company)s
       AND g.posting_date BETWEEN %(from_date)s AND %(to_date)s
       AND g.account IN (SELECT account FROM accounts_in_scope)
@@ -423,6 +442,7 @@ FROM (
         CASE WHEN SUM(g.credit) - SUM(g.debit) > 0 THEN SUM(g.credit) - SUM(g.debit) ELSE 0 END AS net_credit,
         NULL AS balance_debit,
         NULL AS balance_credit,
+        NULL AS status,
         NULL AS owner,
         NULL AS creation,
         NULL AS modified_by,
@@ -436,7 +456,11 @@ FROM (
         COALESCE(SUBSTRING_INDEX(g.cost_center, ' - ', 1), LEFT(g.remarks, 2)) AS dept_code
     FROM `tabGL Entry` g
     WHERE g.docstatus = 1
-      AND IFNULL(g.is_cancelled, 0) = 0
+      AND (
+        COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'All Transactions'
+        OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Posted Transactions'    AND IFNULL(g.is_cancelled, 0) = 0)
+        OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Cancelled Transactions' AND IFNULL(g.is_cancelled, 0) = 1)
+      )
       AND g.company = %(company)s
       AND g.posting_date BETWEEN %(from_date)s AND %(to_date)s
       AND %(account)s = 'Cost of Sales Accounts'
@@ -532,6 +556,7 @@ FROM (
           )
           ELSE 0
         END AS balance_credit,
+        NULL AS status,
         NULL AS owner,
         NULL AS creation,
         NULL AS modified_by,
@@ -542,7 +567,11 @@ FROM (
     LEFT JOIN `tabGL Entry` gle
       ON gle.account = ais.account
      AND gle.docstatus = 1
-     AND IFNULL(gle.is_cancelled, 0) = 0
+     AND (
+       COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'All Transactions'
+       OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Posted Transactions'    AND IFNULL(gle.is_cancelled, 0) = 0)
+       OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Cancelled Transactions' AND IFNULL(gle.is_cancelled, 0) = 1)
+     )
      AND gle.company = %(company)s
      AND gle.posting_date BETWEEN %(from_date)s AND %(to_date)s
     GROUP BY ais.account
@@ -554,6 +583,7 @@ FROM (
         NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
         '' AS particulars,
         NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+        NULL AS status,
         NULL AS owner,
         NULL AS creation,
         NULL AS modified_by,
@@ -614,7 +644,11 @@ FROM (
                 SELECT SUM(pd.debit) - SUM(pd.credit)
                 FROM `tabGL Entry` pd
                 WHERE pd.docstatus = 1
-                  AND IFNULL(pd.is_cancelled, 0) = 0
+                  AND (
+                    COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'All Transactions'
+                    OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Posted Transactions'    AND IFNULL(pd.is_cancelled, 0) = 0)
+                    OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Cancelled Transactions' AND IFNULL(pd.is_cancelled, 0) = 1)
+                  )
                   AND pd.company = %(company)s
                   AND pd.posting_date BETWEEN %(from_date)s AND %(to_date)s
                   AND pd.account = ais2.account
@@ -646,7 +680,11 @@ FROM (
                 SELECT SUM(pd.debit) - SUM(pd.credit)
                 FROM `tabGL Entry` pd
                 WHERE pd.docstatus = 1
-                  AND IFNULL(pd.is_cancelled, 0) = 0
+                  AND (
+                    COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'All Transactions'
+                    OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Posted Transactions'    AND IFNULL(pd.is_cancelled, 0) = 0)
+                    OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Cancelled Transactions' AND IFNULL(pd.is_cancelled, 0) = 1)
+                  )
                   AND pd.company = %(company)s
                   AND pd.posting_date BETWEEN %(from_date)s AND %(to_date)s
                   AND pd.account = ais2.account
@@ -655,6 +693,7 @@ FROM (
           ) acct_end
           WHERE acct_end.ending_balance < 0
         ), 0) AS balance_credit,
+        NULL AS status,
         NULL AS owner,
         NULL AS creation,
         NULL AS modified_by,
@@ -665,7 +704,11 @@ FROM (
     LEFT JOIN `tabGL Entry` gle
       ON gle.account = ais.account
      AND gle.docstatus = 1
-     AND IFNULL(gle.is_cancelled, 0) = 0
+     AND (
+       COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'All Transactions'
+       OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Posted Transactions'    AND IFNULL(gle.is_cancelled, 0) = 0)
+       OR (COALESCE(NULLIF(%(status)s, ''), 'Posted Transactions') = 'Cancelled Transactions' AND IFNULL(gle.is_cancelled, 0) = 1)
+     )
      AND gle.company = %(company)s
      AND gle.posting_date BETWEEN %(from_date)s AND %(to_date)s
 

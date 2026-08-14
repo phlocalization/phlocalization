@@ -160,7 +160,7 @@ def get_data(filters):
 						 AND COALESCE(sed.s_warehouse, '') NOT LIKE 'Stores%%' THEN -sed.amount
 						ELSE sed.amount
 					END AS net_change,
-					CASE WHEN se.docstatus = 2 THEN 'Cancelled' ELSE 'Submitted' END AS status_label,
+					CASE WHEN se.docstatus = 2 THEN 'Cancelled' ELSE 'Posted' END AS status_label,
 					se.creation AS creation, se.modified_by AS modified_by,
 					se.modified AS modified, se.owner AS owner
 				FROM `tabStock Entry` se
@@ -367,7 +367,7 @@ def get_data(filters):
 					jea.debit AS debit,
 					jea.credit AS credit,
 					(jea.debit - jea.credit) AS net_change,
-					CASE WHEN je.docstatus = 2 THEN 'Cancelled' ELSE 'Submitted' END AS status_label,
+					CASE WHEN je.docstatus = 2 THEN 'Cancelled' ELSE 'Posted' END AS status_label,
 					je.creation AS creation, je.modified_by AS modified_by,
 					je.modified AS modified, je.owner AS owner
 				FROM `tabJournal Entry` je
@@ -391,7 +391,7 @@ def get_data(filters):
 					pii.base_amount AS debit,
 					0 AS credit,
 					pii.base_amount AS net_change,
-					CASE WHEN pi.docstatus = 2 THEN 'Cancelled' ELSE 'Submitted' END AS status_label,
+					CASE WHEN pi.docstatus = 2 THEN 'Cancelled' ELSE 'Posted' END AS status_label,
 					pi.creation AS creation, pi.modified_by AS modified_by,
 					pi.modified AS modified, pi.owner AS owner
 				FROM `tabPurchase Invoice Item` pii

@@ -32,5 +32,12 @@ frappe.query_reports["BIR Master Transaction Audit Log"] = {
 			options: ["All Accounts", "Cost of Sales Accounts"].join("\n"),
 			default: "All Accounts",
 		},
+		{
+			fieldname: "status",
+			label: __("Status"),
+			fieldtype: "Select",
+			options: ["All Transactions", "Posted Transactions", "Cancelled Transactions"].join("\n"),
+			default: "Posted Transactions",
+		},
 	],
 };
