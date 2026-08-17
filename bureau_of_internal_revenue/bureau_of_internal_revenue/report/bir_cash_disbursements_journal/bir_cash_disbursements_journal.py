@@ -81,7 +81,7 @@ def get_data(filters):
             /* 4 */ (
                     SELECT CONCAT(a2.account_number, ' - ', a2.account_name)
                     FROM `tabPayment Entry` pe2
-                    JOIN `tabAccount` a2 ON a2.name = pe2.paid_to
+                    JOIN `tabAccount` a2 ON a2.name = pe2.paid_from
                     WHERE pe2.name = gle.voucher_no
                 ) AS bank_account,
 
