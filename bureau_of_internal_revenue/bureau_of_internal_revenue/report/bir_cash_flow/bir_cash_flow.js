@@ -1,7 +1,8 @@
 // Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2026, Ambibuzz Technologies LLP and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Cash Flow"] = $.extend(erpnext.financial_statements, {
+frappe.query_reports["BIR Cash Flow"] = $.extend(erpnext.financial_statements, {
 	name_field: "section",
 	parent_field: "parent_section",
 });
@@ -12,9 +13,9 @@ erpnext.utils.add_dimensions("Cash Flow", 10);
 // filter. It won't be used in cash flow for now so we pop it. Please take
 // of this if you are working here.
 
-frappe.query_reports["Cash Flow"]["filters"].splice(8, 1);
+frappe.query_reports["BIR Cash Flow"]["filters"].splice(8, 1);
 
-frappe.query_reports["Cash Flow"]["filters"].push(
+frappe.query_reports["BIR Cash Flow"]["filters"].push(
 	{
 		fieldname: "include_default_book_entries",
 		label: __("Include Default FB Entries"),

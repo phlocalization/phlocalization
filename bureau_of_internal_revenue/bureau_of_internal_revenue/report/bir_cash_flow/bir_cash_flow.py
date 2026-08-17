@@ -1,4 +1,5 @@
 # Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2026, Ambibuzz Technologies LLP and contributors
 # For license information, please see license.txt
 
 
@@ -96,7 +97,7 @@ def execute(filters=None):
 			accounts = frappe.get_all(
 				"Account",
 				filters={
-					"account_type": row["account_type"],
+					"account_type": ["in", row["account_type"]],
 					"is_group": 0,
 				},
 				pluck="name",
@@ -155,7 +156,8 @@ def get_cash_flow_accounts():
 			{"account_type": "Depreciation", "label": _("Depreciation")},
 			{"account_type": "Receivable", "label": _("Net Change in Accounts Receivable")},
 			{"account_type": "Payable", "label": _("Net Change in Accounts Payable")},
-			{"account_type": "Stock", "label": _("Net Change in Inventory")},
+			{"account_type": ["Stock","Stock Adjustment", "Capital Work in Progress"], "label": _("Net Change in Inventory")},
+			{"account_type": ["Tax"], "label": _("Net Change in Taxes Payable")},
 		],
 	}
 
@@ -188,7 +190,7 @@ def get_account_type_based_data(company, account_type, period_list, accumulated_
 
 		amount = get_account_type_based_gl_data(company, filters)
 
-		if amount and account_type == "Depreciation":
+		if amount and "Depreciation" in account_type:
 			amount *= -1
 
 		total += amount
@@ -218,13 +220,15 @@ def get_account_type_based_gl_data(company, filters=None):
 		filters.cost_center = get_cost_centers_with_children(filters.cost_center)
 		cond += " and cost_center in %(cost_center)s"
 
+	filters.account_type = tuple(filters.account_type)
+
 	gl_sum = frappe.db.sql_list(
 		f"""
 		select sum(credit) - sum(debit)
 		from `tabGL Entry`
 		where company=%(company)s and posting_date >= %(start_date)s and posting_date <= %(end_date)s
 			and voucher_type != 'Period Closing Voucher'
-			and account in ( SELECT name FROM tabAccount WHERE account_type = %(account_type)s) {cond}
+			and account in ( SELECT name FROM tabAccount WHERE account_type in %(account_type)s) {cond}
 	""",
 		filters,
 	)
@@ -327,7 +331,7 @@ def get_opening_balance(company, period_list, filters):
 
 			amount = get_account_type_based_gl_data(company, local_filters) or 0.0
 
-			if account_type == "Depreciation":
+			if "Depreciation" in account_type:
 				cash_value[section_name] += amount * -1
 			else:
 				cash_value[section_name] += amount
