@@ -23,5 +23,12 @@ frappe.query_reports["BIR WIP Audit Trail"] = {
 			fieldtype: "Date",
 			default: frappe.datetime.get_today(),
 		},
+		{
+			fieldname: "status",
+			label: __("Status"),
+			fieldtype: "Select",
+			options: ["All transactions", "Posted Transactions", "Cancelled Transactions"].join("\n"),
+			default: "Posted Transactions",
+		},
 	],
 };
