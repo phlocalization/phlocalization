@@ -1,0 +1,48 @@
+{%
+	var _cp = report.get_columns_for_print ? (report.get_columns_for_print() || []) : [];
+	var _ci = (typeof columns !== "undefined" && columns) ? columns : [];
+	var report_columns = (_cp.length >= _ci.length ? _cp : _ci);
+	report_columns = (report_columns || []).filter(function (c) { return c && !c.hidden; });
+%}
+
+<style>
+	.bir-generic-table {
+		width: 100%;
+		font-size: 7px;
+		table-layout: fixed;
+	}
+	.bir-generic-table th,
+	.bir-generic-table td {
+		padding: 2px 3px;
+		word-break: break-word;
+		overflow-wrap: break-word;
+	}
+</style>
+<table class="table table-bordered bir-generic-table">
+	<thead>
+		<tr>
+			<th style="width: 36px;">#</th>
+			{% for (let i=0, l=report_columns.length; i<l; i++) { %}
+				{% var _c = report_columns[i]; %}
+				<th class="{%= (_c.fieldtype=='Currency' || _c.fieldtype=='Float' || _c.fieldtype=='Int' || _c.fieldtype=='Percent') ? 'text-right' : '' %}">{%= _c.label %}</th>
+			{% } %}
+		</tr>
+	</thead>
+	<tbody>
+		{% for (let j=0, k=data.length; j<k; j++) { %}
+			{% var row = data[j]; %}
+			<tr>
+				<td>{%= j + 1 %}</td>
+				{% for (let i=0, l=report_columns.length; i<l; i++) { %}
+					{% var _c = report_columns[i]; var _fn = _c.fieldname; %}
+					<td class="{%= (_c.fieldtype=='Currency' || _c.fieldtype=='Float' || _c.fieldtype=='Int' || _c.fieldtype=='Percent') ? 'text-right' : '' %}">
+						{% if (!is_null(row[_fn])) { %}{%= frappe.format(row[_fn], _c, {}, row) %}{% } %}
+					</td>
+				{% } %}
+			</tr>
+		{% } %}
+	</tbody>
+</table>
+<p class="text-right text-muted">
+	{%= __("Printed on {0}", [frappe.datetime.str_to_user(frappe.datetime.get_datetime_as_string())]) %}
+</p>
