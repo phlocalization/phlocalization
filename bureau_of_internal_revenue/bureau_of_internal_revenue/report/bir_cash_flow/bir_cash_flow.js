@@ -7,7 +7,7 @@ frappe.query_reports["BIR Cash Flow"] = $.extend(erpnext.financial_statements, {
 	parent_field: "parent_section",
 });
 
-erpnext.utils.add_dimensions("Cash Flow", 10);
+erpnext.utils.add_dimensions("BIR Cash Flow", 10);
 
 // The last item in the array is the definition for Presentation Currency
 // filter. It won't be used in cash flow for now so we pop it. Please take
