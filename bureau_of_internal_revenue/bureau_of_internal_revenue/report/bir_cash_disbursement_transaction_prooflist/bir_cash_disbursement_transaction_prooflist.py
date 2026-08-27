@@ -286,26 +286,12 @@ def get_data(filters):
 	)
 	detail = base_conditions(detail)
 
-	sub_per = frappe.qb.DocType("Payment Entry Reference")
-	sub_2201_alloc = (
-		frappe.qb.from_(sub_per)
-		.select(sub_per.allocated_amount)
-		.where((sub_per.parent == gle.voucher_no) & (sub_per.reference_name == gle.against_voucher))
-		.limit(1)
-	)
-	sub_amount_sum = Sum(Case().when(acc.account_number.like("2201%"), sub_2201_alloc).else_(0))
+	# ---- SUBTOTAL ----
+	# Use paid_amount for the amount column, and SUM(debit-credit)
+	# excluding bank accounts for applied (bank rows net to zero).
 	sub_paid_max = Max(pe_field("paid_amount"))
-	if status == "Cancelled Only":
-		subtotal_amount = sub_paid_max
-	elif status == "All":
-		subtotal_amount = Case().when(Max(gle.is_cancelled) == 1, sub_paid_max).else_(sub_amount_sum)
-	else:
-		subtotal_amount = sub_amount_sum
-	subtotal_applied = Sum(
-		Case()
-		.when(acc.account_number.like("2201%"), Coalesce(gle.debit, 0) - Coalesce(gle.credit, 0))
-		.else_(0)
-	)
+	subtotal_amount = sub_paid_max
+	subtotal_applied = Sum(Coalesce(gle.debit, 0) - Coalesce(gle.credit, 0))
 	subtotal_sort = Concat(gle.posting_date, "-", gle.voucher_no, "-2-0-00000")
 
 	subtotal = (
@@ -328,6 +314,7 @@ def get_data(filters):
 			subtotal_applied.as_("applied"),
 			subtotal_sort.as_("sort_order"),
 		)
+		.where(~acc.account_number.like("1203%") & ~acc.account_number.like("1205%"))
 		.groupby(gle.posting_date, gle.voucher_no)
 	)
 	subtotal = base_conditions(subtotal)
@@ -356,31 +343,16 @@ def get_data(filters):
 	)
 	spacer = base_conditions(spacer)
 
-	gt_per = frappe.qb.DocType("Payment Entry Reference")
-	gt_2201_alloc = (
-		frappe.qb.from_(gt_per)
-		.select(gt_per.allocated_amount)
-		.where((gt_per.parent == gle.voucher_no) & (gt_per.reference_name == gle.against_voucher))
-		.limit(1)
-	)
-	gt_amount_sum = Sum(Case().when(acc.account_number.like("2201%"), gt_2201_alloc).else_(0))
-	gt_paid_max = Max(pe_field("paid_amount"))
-	if status == "Cancelled Only":
-		gt_sub_amount = gt_paid_max
-	elif status == "All":
-		gt_sub_amount = Case().when(Max(gle.is_cancelled) == 1, gt_paid_max).else_(gt_amount_sum)
-	else:
-		gt_sub_amount = gt_amount_sum
-	gt_sub_applied = Sum(
-		Case()
-		.when(acc.account_number.like("2201%"), Coalesce(gle.debit, 0) - Coalesce(gle.credit, 0))
-		.else_(0)
-	)
+	# ---- GRAND TOTAL ----
+	# Same approach: paid_amount for amount, SUM(debit-credit) excluding bank for applied.
+	gt_sub_amount = Max(pe_field("paid_amount"))
+	gt_sub_applied = Sum(Coalesce(gle.debit, 0) - Coalesce(gle.credit, 0))
 
 	gt_inner = (
 		frappe.qb.from_(gle)
 		.join(acc).on(acc.name == gle.account)
 		.select(gle.voucher_no, gt_sub_amount.as_("sub_amount"), gt_sub_applied.as_("sub_applied"))
+		.where(~acc.account_number.like("1203%") & ~acc.account_number.like("1205%"))
 		.groupby(gle.voucher_no)
 	)
 	gt_inner = base_conditions(gt_inner).as_("_grand_total_sub")
