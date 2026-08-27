@@ -215,10 +215,10 @@ def get_data(filters):
 					COALESCE(sed.project, se.project) AS jo_number,
 					SUM(CASE
 						WHEN se.stock_entry_type = 'Material Transfer'
-						 AND COALESCE(sed.s_warehouse, '') LIKE 'Stores%%' THEN sed.amount
+						 AND COALESCE(sed.s_warehouse, '') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
 						WHEN se.stock_entry_type = 'Material Transfer'
-						 AND COALESCE(sed.s_warehouse, '') NOT LIKE 'Stores%%' THEN -sed.amount
-						ELSE sed.amount
+						 AND COALESCE(sed.s_warehouse, '') NOT LIKE 'Stores%%' THEN -ROUND(sed.amount, 2)
+						ELSE ROUND(sed.amount, 2)
 					END) AS net_change
 				FROM `tabStock Entry` se
 				JOIN `tabStock Entry Detail` sed ON sed.parent = se.name
@@ -279,9 +279,9 @@ def get_data(filters):
 			LEFT JOIN (
 				SELECT COALESCE(sed.project, se.project) AS jo_number,
 					SUM(CASE
-						WHEN se.stock_entry_type = 'Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN sed.amount
-						WHEN se.stock_entry_type = 'Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -sed.amount
-						ELSE sed.amount END) AS net_change
+						WHEN se.stock_entry_type = 'Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
+						WHEN se.stock_entry_type = 'Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -ROUND(sed.amount, 2)
+						ELSE ROUND(sed.amount, 2) END) AS net_change
 				FROM `tabStock Entry` se JOIN `tabStock Entry Detail` sed ON sed.parent = se.name
 				WHERE se.docstatus = 1 AND se.company = %(company)s
 				  AND se.posting_date BETWEEN %(from_date)s AND %(to_date)s
@@ -295,16 +295,16 @@ def get_data(filters):
 				SELECT jo_number, SUM(debit) AS debit, SUM(credit) AS credit, SUM(net_change) AS net_change
 				FROM (
 					SELECT COALESCE(sed.project, se.project) AS jo_number,
-						CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN sed.amount
+						CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
 							 WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN 0
-							 ELSE sed.amount END AS debit,
+							 ELSE ROUND(sed.amount, 2) END AS debit,
 						CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN 0
-							 WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN sed.amount
+							 WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
 							 ELSE 0 END AS credit,
-						CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN sed.amount
-							 WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -sed.amount
-							 ELSE sed.amount END AS net_change
-					FROM `tabStock Entry` se JOIN `tabStock Entry Detail` sed ON sed.parent = se.name
+						CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
+							 WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -ROUND(sed.amount, 2)
+							 ELSE ROUND(sed.amount, 2) END AS net_change
+					FROM `tabStock Entry` se JOIN `tabStock Entry Detail` sed ON sed.parent=se.name
 					WHERE se.docstatus=1 AND se.company=%(company)s
 					  AND se.posting_date BETWEEN %(from_date)s AND %(to_date)s
 					  AND COALESCE(sed.project, se.project) IS NOT NULL
@@ -502,15 +502,15 @@ def get_data(filters):
 				SELECT jo_number, SUM(debit) AS debit, SUM(credit) AS credit, SUM(net_change) AS net_change
 				FROM (
 					SELECT COALESCE(sed.project, se.project) AS jo_number,
-						CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN sed.amount
+						CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
 							 WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN 0
-							 ELSE sed.amount END AS debit,
+							 ELSE ROUND(sed.amount, 2) END AS debit,
 						CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN 0
-							 WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN sed.amount
+							 WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
 							 ELSE 0 END AS credit,
-						CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN sed.amount
-							 WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -sed.amount
-							 ELSE sed.amount END AS net_change
+						CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
+							 WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -ROUND(sed.amount, 2)
+							 ELSE ROUND(sed.amount, 2) END AS net_change
 					FROM `tabStock Entry` se JOIN `tabStock Entry Detail` sed ON sed.parent=se.name
 					WHERE se.docstatus=1 AND se.company=%(company)s
 					  AND se.posting_date BETWEEN %(from_date)s AND %(to_date)s
@@ -609,9 +609,9 @@ def get_data(filters):
 				   net_change, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 			FROM (
 				SELECT SUM(CASE
-					WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN sed.amount
-					WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -sed.amount
-					ELSE sed.amount END) AS net_change
+					WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
+					WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -ROUND(sed.amount, 2)
+					ELSE ROUND(sed.amount, 2) END) AS net_change
 				FROM `tabStock Entry` se JOIN `tabStock Entry Detail` sed ON sed.parent=se.name
 				WHERE se.docstatus=1 AND se.company=%(company)s
 				  AND se.posting_date BETWEEN %(from_date)s AND %(to_date)s
@@ -625,9 +625,9 @@ def get_data(filters):
 				   '<b>INVENTORY ENTRY TO GL</b>', '<b>OVER ALL TOTAL:</b>',
 				   mmt.net_change, NULL, glt.net_change, NULL, NULL, NULL, NULL, NULL
 			FROM (
-				SELECT SUM(CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN sed.amount
-								WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -sed.amount
-								ELSE sed.amount END) AS net_change
+				SELECT SUM(CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
+								WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -ROUND(sed.amount, 2)
+								ELSE ROUND(sed.amount, 2) END) AS net_change
 				FROM `tabStock Entry` se JOIN `tabStock Entry Detail` sed ON sed.parent=se.name
 				WHERE se.docstatus=1 AND se.company=%(company)s
 				  AND se.posting_date BETWEEN %(from_date)s AND %(to_date)s
@@ -639,9 +639,9 @@ def get_data(filters):
 			CROSS JOIN (
 				SELECT SUM(net_change) AS net_change
 				FROM (
-					SELECT CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN sed.amount
-								WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -sed.amount
-								ELSE sed.amount END AS net_change
+					SELECT CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
+								WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -ROUND(sed.amount, 2)
+								ELSE ROUND(sed.amount, 2) END AS net_change
 					FROM `tabStock Entry` se JOIN `tabStock Entry Detail` sed ON sed.parent=se.name
 					WHERE se.docstatus=1 AND se.company=%(company)s
 					  AND se.posting_date BETWEEN %(from_date)s AND %(to_date)s
@@ -678,15 +678,15 @@ def get_data(filters):
 			FROM (
 				SELECT SUM(debit) AS debit, SUM(credit) AS credit, SUM(net_change) AS net_change
 				FROM (
-					SELECT CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN sed.amount
+					SELECT CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
 								WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN 0
-								ELSE sed.amount END AS debit,
+								ELSE ROUND(sed.amount, 2) END AS debit,
 						   CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN 0
-								WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN sed.amount
+								WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
 								ELSE 0 END AS credit,
-						   CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN sed.amount
-								WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -sed.amount
-								ELSE sed.amount END AS net_change
+						   CASE WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') LIKE 'Stores%%' THEN ROUND(sed.amount, 2)
+								WHEN se.stock_entry_type='Material Transfer' AND COALESCE(sed.s_warehouse,'') NOT LIKE 'Stores%%' THEN -ROUND(sed.amount, 2)
+								ELSE ROUND(sed.amount, 2) END AS net_change
 					FROM `tabStock Entry` se JOIN `tabStock Entry Detail` sed ON sed.parent=se.name
 					WHERE se.docstatus=1 AND se.company=%(company)s
 					  AND se.posting_date BETWEEN %(from_date)s AND %(to_date)s
