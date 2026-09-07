@@ -94,7 +94,7 @@ def get_columns(filters):
 
 	columns = [
 		{"fieldname": "account", "label": _("Particulars"),              "fieldtype": "Data",     "width": 320},
-		{"fieldname": "ytd_prev", "label": _("YTD {0}").format(prev_year), "fieldtype": "Currency", "width": 150},
+		{"fieldname": "ytd_prev", "label": _("YTD {0}").format(prev_year), "fieldtype": "Currency", "precision": 2, "width": 150},
 	]
 
 	for label in MONTH_LABELS:
@@ -102,6 +102,7 @@ def get_columns(filters):
 			"fieldname": label.lower(),
 			"label": _(label),
 			"fieldtype": "Currency",
+			"precision": 2,
 			"width": 130,
 		})
 
@@ -109,6 +110,7 @@ def get_columns(filters):
 		"fieldname": "ytd_current",
 		"label": _("YTD {0}").format(current_year),
 		"fieldtype": "Currency",
+		"precision": 2,
 		"width": 150,
 	})
 
