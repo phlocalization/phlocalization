@@ -59,7 +59,7 @@ frappe.query_reports["BIR Income Statement"] = {
 		}
 
 		let abs_val = Math.abs(num);
-		let display = format_currency(abs_val, null, 0);
+		let display = format_currency(abs_val, null, 2);
 
 		if (num < 0) {
 			display = `<span style="color:red">(${display})</span>`;
